@@ -1931,7 +1931,7 @@
         // MQTT Connection
         function connectMQTT() {
             const broker = document.getElementById('mqttBroker').value || 'broker.emqx.io';
-            const port = parseInt(document.getElementById('mqttPort').value) || 8083;
+            const port = parseInt(document.getElementById('mqttPort').value) || 8084;
             const username = document.getElementById('mqttUsername').value;
             const password = document.getElementById('mqttPassword').value;
             const baseTopic = document.getElementById('baseTopic').value || 'nanopi/gateway';
@@ -2685,7 +2685,7 @@
             
             // Set default MQTT values
             document.getElementById('mqttBroker').value = 'broker.emqx.io';
-            document.getElementById('mqttPort').value = '8083';
+            document.getElementById('mqttPort').value = '8084';
             document.getElementById('baseTopic').value = 'nanopi/gateway';
             
             logInfo('UI', 'Application initialized with default configuration values');

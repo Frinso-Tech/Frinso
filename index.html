@@ -2301,25 +2301,54 @@
 
         function handleDataMessage(data) {
             logDebug('DATA', 'Processing data message', {
-                valueCount: data.values ? Object.keys(data.values).length : 0,
-                timestamp: data.timestamp
+                registerCount: Object.keys(data).length,
+                timestamp: data.timestamp,
+                data: data
             });
 
-            if (data.values) {
-                let updatedCount = 0;
-                Object.keys(data.values).forEach(key => {
-                    const param = parameters.find(p => p.publish_key === key);
-                    if (param) {
-                        param.last_value = data.values[key].value;
+            // New data format: { timestamp: "...", <reg_number>: <value> or "ERROR" }
+            let updatedCount = 0;
+            let errorCount = 0;
+
+            Object.keys(data).forEach(key => {
+                // Skip timestamp field
+                if (key === 'timestamp') {
+                    return;
+                }
+
+                const regId = parseInt(key);
+                const value = data[key];
+
+                // Skip if not a valid register number
+                if (isNaN(regId)) {
+                    logWarn('DATA', `Skipping non-numeric key: ${key}`);
+                    return;
+                }
+
+                // Find parameter by ID (register number)
+                const param = parameters.find(p => p.id === regId);
+
+                if (param) {
+                    if (value === "ERROR") {
+                        // Handle error status
+                        param.last_status = 'ERROR';
+                        param.last_value = null;
+                        errorCount++;
+                        logDebug('DATA', `Register ${regId} (${param.name}) has error status`);
+                    } else {
+                        // Handle successful read
+                        param.last_value = value;
                         param.last_status = 'OK';
                         updatedCount++;
+                        logDebug('DATA', `Register ${regId} (${param.name}) updated to: ${value}`);
                     }
-                });
-                logInfo('DATA', `Updated ${updatedCount} parameter values`);
-                renderParametersTable();
-            } else {
-                logWarn('DATA', 'Data message received but no values found', data);
-            }
+                } else {
+                    logWarn('DATA', `Received data for unknown register: ${regId}`);
+                }
+            });
+
+            logInfo('DATA', `Updated ${updatedCount} parameter values, ${errorCount} errors`);
+            renderParametersTable();
         }
 
         function handleErrorMessage(data) {

@@ -569,7 +569,7 @@
                 <div class="config-grid">
                     <div class="form-group">
                         <label for="mqttBroker">Broker Host</label>
-                        <input type="text" id="mqttBroker" placeholder="broker.emqx.io" value="broker.emqx.io">
+                        <input type="text" id="mqttBroker" placeholder="broker.emqx.io" value="device.frinso.io">
                     </div>
                     <div class="form-group">
                         <label for="mqttPort">Port</label>
@@ -928,11 +928,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="paramAddress">Address</label>
-                            <input type="number" id="paramAddress" required>
+                            <input type="number" id="paramAddress" required onchange="updatePublishKey()">
                         </div>
                         <div class="form-group">
                             <label for="paramRegType">Register Type</label>
-                            <select id="paramRegType" required>
+                            <select id="paramRegType" required onchange="updatePublishKey()">
                                 <option value="3">Holding Register (Read/Write)</option>
                                 <option value="2">Input Register (Read Only)</option>
                                 <option value="0">Coil (Read/Write Boolean)</option>
@@ -1036,8 +1036,12 @@
                     </div>
                     <div class="form-row full">
                         <div class="form-group">
-                            <label for="paramPublishKey">Publish Key</label>
-                            <input type="text" id="paramPublishKey" required placeholder="e.g., temp_sensor, voltage_L1">
+                            <label for="paramPublishKey">Publish Key
+                                <span style="font-size: 0.85em; color: #6c757d; font-weight: normal;">
+                                    (Auto-generated using Modbus convention: Coils=addr, Discrete=10000+addr, Input=30000+addr, Holding=40000+addr)
+                                </span>
+                            </label>
+                            <input type="text" id="paramPublishKey" required placeholder="e.g., temp_sensor, voltage_L1" readonly style="background-color: #f0f0f0; cursor: not-allowed;">
                         </div>
                     </div>
                     <div class="form-row">
@@ -1200,25 +1204,64 @@
         // Complete data type mapping based on conversion_handler.py analysis
         const dataTypes = {
             // 8-bit integers
-            0: 'int8Signed', 1: 'int8Unsigned',
+            0: "int8Signed",
+            1: "int8Unsigned",
+
             // 16-bit integers
-            2: 'int16SignedAB', 3: 'int16UnsignedAB', 4: 'int16SignedBA', 5: 'int16UnsignedBA',
+            2: "int16SignedAB",
+            3: "int16UnsignedAB",
+            4: "int16SignedBA",
+            5: "int16UnsignedBA",
+
             // 32-bit integers
-            6: 'int32SignedABCD', 7: 'int32UnsignedABCD', 8: 'int32SignedDCBA', 9: 'int32SignedBADC', 
-            10: 'int32SignedCDAB', 11: 'int32UnsignedDCBA', 12: 'int32UnsignedBADC', 13: 'int32UnsignedCDAB',
-            // IEEE Float 64-bit (additional)
-            14: 'ieeeFloat64DCBAHGFE', 15: 'ieeeFloat64GHEFCDAB',
-            // IEEE Float 32-bit
-            16: 'ieeeFloat32ABCD', 17: 'ieeeFloat32CDAB', 18: 'ieeeFloat32DCBA', 19: 'ieeeFloat32BADC',
+            6: "int32SignedABCD",
+            7: "int32UnsignedABCD",
+            8: "int32SignedDCBA",
+            9: "int32UnsignedDCBA",
+            10: "int32SignedBADC",
+            11: "int32UnsignedBADC",
+            12: "int32SignedCDAB",
+            13: "int32UnsignedCDAB",
+
             // 64-bit integers
-            20: 'int64SignedABCDEFGH', 21: 'int64UnsignedABCDEFGH', 22: 'int64SignedHGFEDCBA', 23: 'int64UnsignedHGFEDCBA',
-            24: 'int64SignedBADCFEHG', 25: 'int64UnsignedBADCFEHG', 26: 'int64SignedCDABGHEF', 27: 'int64UnsignedCDABGHEF',
-            28: 'int64SignedDCBAHGFE', 29: 'int64UnsignedDCBAHGFE', 30: 'int64SignedGHEFCDAB', 31: 'int64UnsignedGHEFCDAB',
-            32: 'int64SignedFEHGBADC', 33: 'int64UnsignedFEHGBADC', 34: 'int64SignedEFGHABCD', 35: 'int64UnsignedEFGHABCD',
+            14: "int64SignedABCDEFGH",
+            15: "int64UnsignedABCDEFGH",
+            16: "int64SignedBADCFEHG",
+            17: "int64UnsignedBADCFEHG",
+            18: "int64SignedCDABGHEF",
+            19: "int64UnsignedCDABGHEF",
+            20: "int64SignedDCBAHGFE",
+            21: "int64SignedUnsignedDCBAHGFE",  // (kept as per your original)
+            22: "int64SignedHGFEDCBA",
+            23: "int64UnsignedHGFEDCBA",
+            24: "int64SignedGHEFCDAB",
+            25: "int64UnsignedGHEFCDAB",
+            26: "int64SignedFEHGBADC",
+            27: "int64UnsignedFEHGBADC",
+            28: "int64SignedEFGHABCD",
+            29: "int64UnsignedEFGHABCD",
+
+            // IEEE Float 32-bit
+            30: "ieeeFloat32ABCD",
+            31: "ieeeFloat32CDAB",
+            32: "ieeeFloat32DCBA",
+            33: "ieeeFloat32BADC",
+
             // IEEE Float 64-bit
-            36: 'ieeeFloat64ABCDEFGH', 37: 'ieeeFloat64HGFEDCBA', 38: 'ieeeFloat64BADCFEHG', 39: 'ieeeFloat64CDABGHEF',
+            34: "ieeeFloat64ABCDEFGH",
+            35: "ieeeFloat64BADCFEHG",
+            36: "ieeeFloat64CDABGHEF",
+            37: "ieeeFloat64DCBAHGFE",
+            38: "ieeeFloat64HGFEDCBA",
+            39: "ieeeFloat64GHEFCDAB",
+            40: "ieeeFloat64FEHGBADC",
+            41: "ieeeFloat64EFGHABCD",
+
             // Bit types
-            40: 'bitBoolean', 41: 'bitString', 42: 'bitInt', 43: 'bitEnum'
+            42: "bitBoolean",
+            43: "bitString",
+            44: "bitInt",
+            45: "bitEnum"
         };
 
         const registerTypes = {
@@ -1248,6 +1291,44 @@
             if (dataTypeLength[dataType]) {
                 lengthInput.value = dataTypeLength[dataType];
             }
+        }
+
+        // Update publish key based on register type and address (Modbus convention)
+        function updatePublishKey() {
+            const address = parseInt(document.getElementById('paramAddress').value);
+            const regType = parseInt(document.getElementById('paramRegType').value);
+            const publishKeyInput = document.getElementById('paramPublishKey');
+
+            // Only auto-update if address is valid
+            if (isNaN(address) || address < 0) {
+                return;
+            }
+
+            let publishKey;
+
+            // Apply Modbus addressing convention:
+            // Coils (0): address
+            // Discrete Inputs (1): 10000 + address
+            // Input Registers (2): 30000 + address
+            // Holding Registers (3): 40000 + address
+            switch(regType) {
+                case 0: // Coil
+                    publishKey = address.toString();
+                    break;
+                case 1: // Discrete Input
+                    publishKey = (10000 + address).toString();
+                    break;
+                case 2: // Input Register
+                    publishKey = (30000 + address).toString();
+                    break;
+                case 3: // Holding Register
+                    publishKey = (40000 + address).toString();
+                    break;
+                default:
+                    publishKey = address.toString();
+            }
+
+            publishKeyInput.value = publishKey;
         }
 
         // Tab switching
@@ -1930,7 +2011,7 @@
 
         // MQTT Connection
         function connectMQTT() {
-            const broker = document.getElementById('mqttBroker').value || 'broker.emqx.io';
+            const broker = document.getElementById('mqttBroker').value || 'device.frinso.io';
             const port = parseInt(document.getElementById('mqttPort').value) || 8084;
             const username = document.getElementById('mqttUsername').value;
             const password = document.getElementById('mqttPassword').value;
@@ -2306,7 +2387,7 @@
                 data: data
             });
 
-            // New data format: { timestamp: "...", <reg_number>: <value> or "ERROR" }
+            // New data format: { timestamp: "...", <publish_key>: <value> or "ERROR" }
             let updatedCount = 0;
             let errorCount = 0;
 
@@ -2316,34 +2397,28 @@
                     return;
                 }
 
-                const regId = parseInt(key);
+                const publishKey = key;
                 const value = data[key];
 
-                // Skip if not a valid register number
-                if (isNaN(regId)) {
-                    logWarn('DATA', `Skipping non-numeric key: ${key}`);
-                    return;
-                }
-
-                // Find parameter by ID (register number)
-                const param = parameters.find(p => p.id === regId);
+                // Find parameter by publish_key
+                const param = parameters.find(p => p.publish_key === publishKey);
 
                 if (param) {
                     if (value === "ERROR") {
                         // Handle error status
-                        param.last_status = 'ERROR';
+                        param.last_status_code = 2; // COMM_ERROR
                         param.last_value = null;
                         errorCount++;
-                        logDebug('DATA', `Register ${regId} (${param.name}) has error status`);
+                        logDebug('DATA', `Publish key ${publishKey} (${param.name}) has error status`);
                     } else {
                         // Handle successful read
                         param.last_value = value;
-                        param.last_status = 'OK';
+                        param.last_status_code = 0; // OK
                         updatedCount++;
-                        logDebug('DATA', `Register ${regId} (${param.name}) updated to: ${value}`);
+                        logDebug('DATA', `Publish key ${publishKey} (${param.name}) updated to: ${value}`);
                     }
                 } else {
-                    logWarn('DATA', `Received data for unknown register: ${regId}`);
+                    logWarn('DATA', `Received data for unknown publish key: ${publishKey}`);
                 }
             });
 
@@ -2516,7 +2591,11 @@
             document.getElementById('paramId').value = Math.max(...parameters.map(p => p.id), 0) + 1;
             document.getElementById('paramLength').value = 1;
             document.getElementById('paramScaling').value = 1.0;
+            document.getElementById('paramAddress').value = 0; // Set default address
             document.getElementById('parameterModal').style.display = 'block';
+
+            // Trigger publish key update with default values
+            updatePublishKey();
         }
 
         function editParameter(id) {
@@ -2713,7 +2792,7 @@
             document.getElementById('modbusUnitId').value = 1;
             
             // Set default MQTT values
-            document.getElementById('mqttBroker').value = 'broker.emqx.io';
+            document.getElementById('mqttBroker').value = 'device.frinso.io';
             document.getElementById('mqttPort').value = '8084';
             document.getElementById('baseTopic').value = 'nanopi/gateway';
             
